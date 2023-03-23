@@ -8,40 +8,47 @@ uint32_t systemClock;
 
 void RCC_Config(void){
 
-	RCC->CR &= ~(1<<0);
+	// 8 000 000 -> 16 000 000
+	RCC->CR &= ~(1<<0); //HSI OFF
 
-	RCC->CR |= 1<<16;
-	while(!(RCC->CR & (1<<17)));
+	RCC->CR |= 1<<16;	//HSE ON
+	while(!(RCC->CR & (1<<17)));	//Wait HSE active
 	RCC->CR |= 1<<19;
-	RCC->PLLCFGR=0x00000000;
+	RCC->PLLCFGR=0x00000000;  //PLLCFGR Reset
 	//tüm bitleri sýfýrlamadan çalýþmadý.
 	//RCC->PLLCFGR |= (4<<0);
+	RCC->PLLCFGR |=(1<<22); //PLL Source HSE
 
 	RCC->PLLCFGR &= ~(1<<0);
 	RCC->PLLCFGR &= ~(1<<1);
-	RCC->PLLCFGR |= (1<<2);
+	RCC->PLLCFGR |= (1<<2); 	//PLL M 4
 	RCC->PLLCFGR &= ~(1<<3);
 	RCC->PLLCFGR &= ~(1<<4);
 	RCC->PLLCFGR &= ~(1<<5);
 
-	RCC->PLLCFGR |= (168<<6);
+	RCC->PLLCFGR |= (168<<6);	//PLL N 168
+	//PLL P 2 because PLLCFGR Reset bit 16 17 are 0 so PLLP=2
+	RCC->CR |=(1<<24); //PLL ON
+	while(!(RCC->CR & (1<<25))); //Wait PLL active
 
+	RCC->CFGR &=~(1<<0);
+	RCC->CFGR |=(1<<1); //System clock is PLL
 
+	while(!(RCC->CFGR & (1<<1))); // sadece 1. Bit PLL durumunda 1 olduðu için onu kontrol ediyoruz döngü içerisinde.
 
 
 }
 
 int main(void)
 {
-	systemClock=SystemCoreClock;
 
-	RCC_DeInit();
+
+	RCC_Config();
 
 	SystemCoreClockUpdate();
 
 	systemClock=SystemCoreClock;
 
-	RCC_Config();
   while (1)
   {
 
